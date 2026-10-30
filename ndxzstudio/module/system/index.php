@@ -4371,9 +4371,7 @@ var ide = '$go[id]';";
 		// time for some action
 		$template = (file_exists(DIRNAME . '/ndxzsite/' . $OBJ->vars->exhibit['obj_theme'] . '/' . $OBJ->vars->exhibit['template'])) ? $OBJ->vars->exhibit['template'] : 'index.php';
 		$filename = DIRNAME . '/ndxzsite/' . $OBJ->vars->exhibit['obj_theme'] . '/' . $template;
-		$fp = @fopen($filename, 'r');
-		$contents = fread($fp, filesize($filename));
-		fclose($fp);
+		$contents = (string) @file_get_contents($filename);
 		
 		//echo 'here';
 
@@ -6760,9 +6758,7 @@ var ide = '$go[id]';";
 		if (($format == 'css') && (is_writable($template)))
 		{
 			$filename = $template;
-			$fp = @fopen($filename, 'r');
-			$contents = fread($fp, filesize($filename));
-			fclose($fp);
+			$contents = (string) @file_get_contents($filename);
 		
 			$b = $this->toggler();
 		
@@ -6795,9 +6791,7 @@ var ide = '$go[id]';";
 		{
 			// we'll just show the code...
 			$filename = $template;
-			$fp = @fopen($filename, 'r');
-			$contents = fread($fp, filesize($filename));
-			fclose($fp);
+			$contents = (string) @file_get_contents($filename);
 
 			$b = $this->toggler();
 

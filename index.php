@@ -185,9 +185,7 @@ else
    		if ($filename === false) $filename = ndxz_safe_subpath(DIRNAME . '/ndxzsite/', 'default/index.php');
 	}
 
-	$fp = @fopen($filename, 'r');
-	$contents = fread($fp, filesize($filename));
-	fclose($fp);
+	$contents = (string) @file_get_contents($filename);
 
 	$OBJ->parse->code = $contents;
 	$output = $OBJ->parse->parsing();

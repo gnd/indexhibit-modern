@@ -193,10 +193,7 @@ class Mail
      */
     public function getAttachmentData($path)
     {
-        $filesize = filesize($path);
-        $handle = fopen($path, "r");
-        $attachment = fread($handle, $filesize);
-        fclose($handle);
+        $attachment = file_get_contents($path);
         return chunk_split(base64_encode($attachment));
     }
     /**
