@@ -25,7 +25,6 @@ define('GIMGS', BASEFILES . '/gimgs');
 // use an editor, i guess...
 $default['tinymce'] = false; // not yet
 
-$default['parsing'] = false;
 	
 // cache time
 $default['caching'] = false;

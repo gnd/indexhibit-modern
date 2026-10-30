@@ -1,4 +1,4 @@
-<?php
+<?php if (!defined('SITE')) exit('No direct script access allowed');
 /*
  * jQuery File Upload Plugin PHP Example 5.2.2
  * https://github.com/blueimp/jQuery-File-Upload
@@ -166,9 +166,6 @@ class Upload
             $img_height
         ) && $write_image($new_img, $new_file_path, $image_quality);
 */
-        // Free up memory (imagedestroy does not delete files):
-        @imagedestroy($src_img);
-        //@imagedestroy($new_img);
         return $success;
     }
     
@@ -267,8 +264,6 @@ class Upload
           	    return false;
       	}
       	$success = imagejpeg($image, $file_path);
-      	// Free up memory (imagedestroy does not delete files):
-      	@imagedestroy($image);
       	return $success;
     }
     
@@ -397,7 +392,8 @@ class Upload
             foreach ($upload['tmp_name'] as $index => $value) 
             {
                 //if upload is in list of uploadable files
-                $type_test = end(explode('.', $upload['name'][$index]));
+                $type_test = explode('.', $upload['name'][$index]);
+                $type_test = end($type_test);
                 if (in_array(strtolower($type_test), $types))
                 {
                     $info[] = $this->handle_file_upload(
@@ -420,7 +416,8 @@ class Upload
         elseif ($upload || isset($_SERVER['HTTP_X_FILE_NAME'])) 
         {
             //if upload is in list of uploadable files
-            $type_test = end(explode('.', $upload['name']));
+            $type_test = explode('.', $upload['name']);
+            $type_test = end($type_test);
             if (in_array(strtolower($type_test), $types))
             {
                 // param_name is a single object identifier like "file",

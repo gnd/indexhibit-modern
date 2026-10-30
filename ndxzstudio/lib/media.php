@@ -249,7 +249,6 @@ class Media
 		
 		if ($this->make_sys == true) $this->make_system();
 		
-		imagedestroy($this->input_image);
 	}
 	
 
@@ -276,7 +275,6 @@ class Media
 		
 		if ($this->make_sys == true) $this->make_system();
 		
-		imagedestroy($this->input_image);
 	}
 	
 	
@@ -296,7 +294,6 @@ class Media
 		$this->filemime = 'gif';
 		$this->do_output($im, DIRNAME . '/files/gimgs/' . $new_name);
 
-		imagedestroy($im);
 		
 		return $new_name;
 	}
@@ -327,7 +324,6 @@ class Media
 		
 		if ($this->make_sys == true) $this->make_system();
 		
-		imagedestroy($this->input_image);
 	}
 	
 	
@@ -343,7 +339,6 @@ class Media
 		//if ($this->make_image == true) $this->make_image();
 		$this->make_user_thumbnail();
 		
-		imagedestroy($this->input_image);
 	}
 	
 	
@@ -359,7 +354,6 @@ class Media
 		//if ($this->make_image == true) $this->make_image();
 		$this->make_thumbnail_cinematic();
 		
-		imagedestroy($this->input_image);
 	}
 	
 	
@@ -392,7 +386,6 @@ class Media
 			$this->output_path . $this->id . $this->filename;
 	
 		$this->do_output($output_image, $out);
-		imagedestroy($output_image);
 		
 		if (function_exists('chmod')) chmod($out, 0777);
 	}
@@ -477,8 +470,6 @@ class Media
 		
 		$this->do_output($imT, $name);
 		
-		imagedestroy($output_image);
-		imagedestroy($imT);
 		
 		if (function_exists('chmod')) chmod($name, 0777);
 	}
@@ -545,8 +536,6 @@ class Media
 		$this->do_output($imT, $name);
 		//$this->do_output($imT, $this->path . 'th-' . $this->id . $this->filename);
 		//$this->do_output($imT, $this->path . '/' . 'th-' . $this->filename);
-		imagedestroy($output_image);
-		imagedestroy($imT);
 		
 		if (function_exists('chmod')) chmod($name, 0777);
 	}
@@ -613,8 +602,6 @@ class Media
 		$this->do_output($imT, $name);
 		//$this->do_output($imT, $this->path . 'th-' . $this->id . $this->filename);
 		//$this->do_output($imT, $this->path . '/' . 'th-' . $this->filename);
-		imagedestroy($output_image);
-		imagedestroy($imT);
 		
 		if (function_exists('chmod')) chmod($name, 0777);
 	}
@@ -681,8 +668,6 @@ class Media
 		$this->do_output($imT, $name);
 		//$this->do_output($imT, $this->path . 'th-' . $this->id . $this->filename);
 		//$this->do_output($imT, $this->path . '/' . 'th-' . $this->filename);
-		imagedestroy($output_image);
-		imagedestroy($imT);
 		
 		if (function_exists('chmod')) chmod($name, 0777);
 	}
@@ -722,8 +707,6 @@ class Media
 		
 		$this->do_output($imT, $out);
 		
-		imagedestroy($output_image);
-		imagedestroy($imT);
 		
 		if (function_exists('chmod')) chmod($out, 0777);
 	}
@@ -768,7 +751,6 @@ class Media
 			DIRNAME . '/files/dimgs/' . $this->filename_override;
 	
 		$this->do_output($output_image, $name);
-		imagedestroy($output_image);
 		
 		if (function_exists('chmod')) chmod($name, 0777);
 	}
@@ -808,7 +790,6 @@ class Media
 		$this->do_output($output_image, $name);
 
 		//$this->do_output($output_image, $this->path . 'th-' .  $this->id . $this->filename);
-		imagedestroy($output_image);
 		
 		if (function_exists('chmod')) chmod($name, 0777);
 	}
@@ -841,7 +822,6 @@ class Media
 			$this->output_path . 'systh-' . $this->id . $this->filename;
 	
 		$this->do_output($output_image, $out);
-		imagedestroy($output_image);
 		
 		if (function_exists('chmod')) chmod($out, 0777);
 	}
@@ -873,7 +853,6 @@ class Media
 			$this->output_path . 'sys-' . $this->id . $this->filename;
 
 		$this->do_output($output_image, $out);
-		imagedestroy($output_image);
 		
 		if (function_exists('chmod')) chmod($out, 0777);
 	}
@@ -895,7 +874,6 @@ class Media
 		$this->do_output($output_image, $name);
 
 		//$this->do_output($output_image, $this->path . 'th-' .  $this->id . $this->filename);
-		imagedestroy($output_image);
 		
 		if (function_exists('chmod')) chmod($name, 0777);
 	}

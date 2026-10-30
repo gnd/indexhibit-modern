@@ -17,7 +17,8 @@ function getFiles($path, $default)
 			while (($module = readdir($fp)) !== false) 
 			{
 				// need to get the extension
-				$ext = array_pop( explode('.', $module) );
+				$ext = explode('.', $module);
+				$ext = array_pop($ext);
 					
 				// and does not begin with...thumbnails...
 					

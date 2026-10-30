@@ -14,7 +14,7 @@
 * @author Vaska 
 */
 #[AllowDynamicProperties]
-class FilesourceFolder implements Filesource 
+class FilesourceFolder
 {
 	var $rs = array();
 	
@@ -65,7 +65,8 @@ class FilesourceFolder implements Filesource
 			$clean['media_obj_type'] = 'exhibit';
 			$clean['media_ref_id'] = $id;
 			$clean['media_file'] = $do;
-			$clean['media_mime'] = array_pop( explode('.', $do) );
+			$clean['media_mime'] = explode('.', $do);
+			$clean['media_mime'] = array_pop($clean['media_mime']);
 			$clean['media_order'] = $key + 1;
 			$clean['media_dir'] = $rs['media_info'];
 			

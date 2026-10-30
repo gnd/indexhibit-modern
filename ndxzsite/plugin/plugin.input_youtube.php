@@ -113,9 +113,7 @@ class input_youtube
 					$ch = curl_init ("http://img.youtube.com/vi/$tmp/hqdefault.jpg");
 					curl_setopt($ch, CURLOPT_HEADER, 0);
 					curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-					curl_setopt($ch, CURLOPT_BINARYTRANSFER, 1);
 					$rawdata = curl_exec ($ch);
-					curl_close ($ch);
 					$fp = fopen(DIRNAME . "/files/gimgs/" . $clean['media_thumb'], 'w');
 					fwrite($fp, $rawdata);
 					fclose($fp);
@@ -149,13 +147,13 @@ class input_youtube
 				$out = parse_url($url);
 				if (!isset($out['host'])) return '';
 				parse_str($out['query'], $q);
-				return $q['v'];	
+				return isset($q['v']) ? preg_replace('/[^a-zA-Z0-9_-]/', '', $q['v']) : '';
 			}
 			else if (preg_match('/vimeo/i', $url))
 			{
 				// probably need to review this one
 				$out = explode('com/', $url);
-				return $out[1];
+				return isset($out[1]) ? preg_replace('/[^a-zA-Z0-9_-]/', '', $out[1]) : '';
 			}
 			else
 			{
@@ -164,7 +162,7 @@ class input_youtube
 		}
 		else
 		{
-			return $url;
+			return preg_replace('/[^a-zA-Z0-9_-]/', '', $url);
 		}
 	}
 }

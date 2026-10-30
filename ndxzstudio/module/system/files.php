@@ -48,7 +48,8 @@ function find_files()
 		
 		foreach ($out as $a) 
 		{
-			$mime = array_pop(explode('.', $a));
+			$mime = explode('.', $a);
+			$mime = array_pop($mime);
 			
 			$url = "?a=$go[a]&q=find&id=$go[id]&x=" . $a;
 			
@@ -177,7 +178,8 @@ function getFiles()
 		foreach ($rs as $a) 
 		{
 			// fake 'mime', actually
-			$mime = array_pop(explode('.', $a['media_file']));
+			$mime = explode('.', $a['media_file']);
+			$mime = array_pop($mime);
 
 			$use = span(filesManagerType($mime, $a['media_file'], $a['media_x'], $a['media_y'], $a['media_caption']),  "class='p-action'");
 				

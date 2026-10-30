@@ -1,4 +1,4 @@
-<?php
+<?php if (!defined('SITE')) exit('No direct script access allowed');
 
 #[AllowDynamicProperties]
 class OptionsBuilder
@@ -9,7 +9,7 @@ class OptionsBuilder
 	public $html;
 	public $plugin		= array();
 	
-	public function builder($options = array(), $build = array(), $key)
+	public function builder($options = array(), $build = array(), $key='')
 	{
 		$this->options = $options;
 		$this->build = $build; // we may need to deal with unset variables below

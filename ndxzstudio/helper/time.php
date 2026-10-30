@@ -55,7 +55,7 @@ function convertDate($date='', $offset='', $format='')
 }
 
 
-function strffftime(string $format, $timestamp = null, string $locale = null): string
+function strffftime(string $format, $timestamp = null, ?string $locale = null): string
 {
 	if (null === $timestamp) {
 		$timestamp = new \DateTime;
@@ -83,7 +83,25 @@ function strffftime(string $format, $timestamp = null, string $locale = null): s
 		'%P' => 'aa',	// lower-case 'am' or 'pm' based on the given time	Example: am for 00:31, pm for 22:23
 	];
 
-	$intl_formatter = function (\DateTimeInterface $timestamp, string $format) use ($intl_formats, $locale) {
+	// fallback (english only) when the intl extension is not available
+	$date_formats = [
+		'%a' => 'D',
+		'%A' => 'l',
+		'%b' => 'M',
+		'%B' => 'F',
+		'%h' => 'M',
+		'%p' => 'A',
+		'%P' => 'a',
+		'%c' => 'D M j H:i:s Y',
+		'%x' => 'm/d/y',
+		'%X' => 'H:i:s',
+	];
+
+	$intl_formatter = function (\DateTimeInterface $timestamp, string $format) use ($intl_formats, $date_formats, $locale) {
+		if (!class_exists('IntlDateFormatter')) {
+			return $timestamp->format($date_formats[$format]);
+		}
+
 		$tz = $timestamp->getTimezone();
 		$date_type = \IntlDateFormatter::FULL;
 		$time_type = \IntlDateFormatter::FULL;

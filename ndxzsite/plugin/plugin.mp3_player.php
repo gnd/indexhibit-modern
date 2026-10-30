@@ -1,4 +1,4 @@
-<?php
+<?php if (!defined('SITE')) exit('No direct script access allowed');
 
 function mp3_player()
 {

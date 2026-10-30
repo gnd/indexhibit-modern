@@ -1,4 +1,4 @@
-<?php
+<?php if (!defined('SITE')) exit('No direct script access allowed');
 
 // how can this be improved?
 // it becomes a container function with a hook

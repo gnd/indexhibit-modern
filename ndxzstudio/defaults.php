@@ -1,10 +1,7 @@
 <?php if (!defined('SITE')) exit('No direct script access allowed');
 
-// darn quotes
-ini_set("magic_quotes_runtime", 0);
-
 // version
-define('VERSION', '2.1.6');
+define('VERSION', '2.2.0');
 	
 // Paths/definitions of things (relative to index file)
 define('LIBPATH', 'lib');

@@ -63,56 +63,18 @@ class Template
 	public function tpl_update_news()
 	{
 		$OBJ =& get_instance();
-		$k = '';
-		$v = '';
 		$alert = '';
 
 		// only do check on index page
+		// the news feed from api.indexhibit.org is gone, we only check for local upgrades
 		if (($OBJ->go['a'] == 'exhibits') && ($OBJ->go['q'] == 'index'))
 		{
-			$params = array();
-			$params['v']		= $OBJ->vars->settings['version'];
-			$params['method']	= 'news';
-			$params['lang']		= $OBJ->vars->settings['site_lang'];
-
-			$encoded_params = array();
-
-			foreach ($params as $k => $v)
+			if (version_compare(VERSION, $OBJ->vars->settings['version'], '>'))
 			{
-				$encoded_params[] = urlencode($k).'='.urlencode($v);
+				$alert .= "<div class='tpl_update_avail'>Update to version " . VERSION . " - <a href='?a=system&q=upgrade'>click here</a></div>";
 			}
 
-			$url = 'https://api.indexhibit.org/' . '?' . implode('&', $encoded_params);
-
-			$ch = curl_init();
-			curl_setopt($ch, CURLOPT_URL, $url);
-			curl_setopt($ch, CURLOPT_POST, 1);
-    		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    		$json = curl_exec($ch);
-    		$data = json_decode($json, TRUE);
-			curl_close ($ch);
-
-			if ($data['success'] != false)
-			{
-				if ($data['news'] != '')
-				{
-					$alert .= "<div class='tpl_update_news'>" . $data['news'] . "</div>";
-				}
-
-				if ($data['versionalert'] == true)
-				{
-					if (VERSION > $OBJ->vars->settings['version'])
-					{
-						$alert .= "<div class='tpl_update_avail'>Update to version " . VERSION . " - <a href='?a=system&q=upgrade'>click here</a></div>";
-					}
-					else
-					{
-						$alert .= "<div class='tpl_update_avail'>Download new version " . $data['newversion'] . " - <a href='https://indexhibit.org/news/'>click here</a></div>";
-					}
-				}
-
-				return $alert;
-			}
+			return $alert;
 		}
 
 		return;
@@ -640,6 +602,16 @@ class Template
 	
 	
 	/**
+	* Return hidden CSRF input
+	*
+	* @return string
+	*/
+	public function csrf_field()
+	{
+		return ndxz_csrf_field();
+	}
+
+	/**
 	* Return array
 	*
 	* @param void
@@ -648,7 +620,15 @@ class Template
 	public function tpl_add_script()
 	{
 		$out = '';
-		
+
+		// Always publish the CSRF token and configure jQuery to send it
+		// with every non-GET AJAX request in the admin backend.
+		$csrf = htmlspecialchars(ndxz_csrf_get(), ENT_QUOTES, 'UTF-8');
+		$out .= "\n<script type='text/javascript'>\n";
+		$out .= "var ndxz_csrf = " . json_encode($csrf) . ";\n";
+		$out .= "if (window.jQuery) { jQuery(document).ajaxSend(function(event, jqxhr, settings) { if (!settings.type || settings.type.toUpperCase() !== 'GET') { jqxhr.setRequestHeader('X-CSRF-Token', ndxz_csrf); } }); }\n";
+		$out .= "</script>\n\n";
+
 		if ($this->ex_css != '')
 		{
 			$out .= "\n<style type='text/css'>\n";

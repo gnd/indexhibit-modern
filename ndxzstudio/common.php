@@ -36,7 +36,7 @@ function &get_instance()
 
 // concept grabbed mostly from CodeIgniter (and Zend) - sorry it's been dumbed down so much. ;)
 // this is a little ugly but it works
-function &load_class($class, $instantiate = TRUE, $type, $internal = FALSE)
+function &load_class($class, $instantiate = TRUE, $type = 'lib', $internal = FALSE)
 {
 	global $indx;
 	
@@ -283,7 +283,7 @@ function front_error($message = '', $code = 404)
 	}
 
 	ob_start();
-	include_once DIRNAME . '/ndxzsite/errors.php';
+	include_once DIRNAME . '/ndxzsite/error.php';
 	$buffer = ob_get_contents();
 	ob_end_clean();
 	echo $buffer;
@@ -383,14 +383,17 @@ function system_redirect($params='')
 	// do we need to put some validators on this?
 	// don't want the extra slash
 	$self = (dirname($_SERVER['PHP_SELF']) == '/') ? '' : dirname($_SERVER['PHP_SELF']);
-	
-	header('Location: http://' . $_SERVER['HTTP_HOST'] . $self . '/' .  $params);
+
+	// only allow safe, relative query-string redirects
+	$params = preg_replace('/[^a-zA-Z0-9_=&?%.\/-]/', '', (string) $params);
+
+	header('Location: ' . $self . '/' . $params);
 	return;
 }
 
 
 // revise this later...
-function entry_uri($uri='', $server_uri)
+function entry_uri($uri='', $server_uri='')
 {
 	$url = $server_uri;
 
@@ -527,3 +530,137 @@ function microtime_float()
     list($usec, $sec) = explode(" ", microtime());
     return ((float)$usec + (float)$sec);
 }
+
+// ----------------------------------------------------------------
+// CSRF helpers for the admin backend
+// ----------------------------------------------------------------
+
+// The token is derived from the random per-login user_hash, so it stays
+// valid for the whole login and needs no PHP session.
+function ndxz_csrf_get()
+{
+	$OBJ =& get_instance();
+	
+	$hash = (isset($OBJ->access->prefs['user_hash'])) ? (string) $OBJ->access->prefs['user_hash'] : '';
+	if ($hash == '') return '';
+	
+	return hash_hmac('sha256', 'ndxz_csrf', $hash);
+}
+
+function ndxz_csrf_field()
+{
+	return '<input type="hidden" name="csrf" value="' . htmlspecialchars(ndxz_csrf_get(), ENT_QUOTES, 'UTF-8') . '" />' . "\n";
+}
+
+function ndxz_csrf_verify()
+{
+	$expected = ndxz_csrf_get();
+	if ($expected === '') return false;
+
+	$provided = '';
+	if (isset($_POST['csrf']))
+	{
+		$provided = (string) $_POST['csrf'];
+	}
+	elseif (isset($_SERVER['HTTP_X_CSRF_TOKEN']))
+	{
+		$provided = (string) $_SERVER['HTTP_X_CSRF_TOKEN'];
+	}
+
+	if ($provided === '') return false;
+	return hash_equals($expected, $provided);
+}
+
+// Central file-path guard for the few places that still need to read/write
+// files under a fixed base directory.
+function ndxz_safe_path($base, $name)
+{
+	$base = realpath($base);
+	if ($base === false) return false;
+	$base = rtrim($base, '/');
+
+	$candidate = realpath($base . '/' . basename($name));
+	if ($candidate === false) return false;
+
+	if (strpos($candidate, $base . '/') !== 0) return false;
+	return $candidate;
+}
+
+// Like ndxz_safe_path() but allows trusted subdirectories while still
+// blocking directory traversal. Used by the admin asset/code editors.
+function ndxz_safe_subpath($base, $name)
+{
+	$base = realpath($base);
+	if ($base === false) return false;
+	$base = rtrim($base, '/');
+
+	$name = ltrim((string) $name, '/');
+	$candidate = realpath($base . '/' . $name);
+	if ($candidate === false) return false;
+
+	if (strpos($candidate, $base . '/') !== 0) return false;
+	return $candidate;
+}
+
+// Output-encoding helper for HTML text nodes.
+// Existing entities (like &amp; typed into titles) are kept as they are.
+function ndxz_esc($s)
+{
+	return htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8', false);
+}
+
+// Whitelist the tag method values ('exh' or 'img').
+function ndxz_tag_method($value)
+{
+	return ($value === 'img') ? 'img' : 'exh';
+}
+
+// ----------------------------------------------------------------
+// Password hashing + login-token helpers
+// ----------------------------------------------------------------
+
+function ndxz_password_hash($password)
+{
+	return password_hash((string) $password, PASSWORD_DEFAULT);
+}
+
+function ndxz_password_verify($password, $stored)
+{
+	$stored = (string) $stored;
+	// Legacy Indexhibit stored md5(password).
+	if (strlen($stored) === 32 && !preg_match('/^\$2[aby]\$/', $stored))
+	{
+		return hash_equals(md5((string) $password), $stored);
+	}
+	return password_verify((string) $password, $stored);
+}
+
+function ndxz_password_needs_rehash($stored)
+{
+	$stored = (string) $stored;
+	if (strlen($stored) === 32 && !preg_match('/^\$2[aby]\$/', $stored)) return true;
+	return password_needs_rehash($stored, PASSWORD_DEFAULT);
+}
+
+function ndxz_login_token_new()
+{
+	return bin2hex(random_bytes(32));
+}
+
+function ndxz_login_token_hash($token)
+{
+	return md5((string) $token);
+}
+
+function ndxz_auth_cookie_options($expire = 0)
+{
+	$secure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off');
+	return array(
+		'expires' => $expire,
+		'path' => '/',
+		'secure' => $secure,
+		'httponly' => true,
+		'samesite' => 'Lax'
+	);
+}
+

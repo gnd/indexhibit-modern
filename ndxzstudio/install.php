@@ -22,6 +22,7 @@ class Installation
 	var $charset_collate;
 	var $charset = 'utf8';
 	var $collate = 'utf8_unicode_ci';
+	var $login_token;
 
 	public function __construct()
 	{
@@ -76,7 +77,7 @@ class Installation
 		}
 		
 		// PHP version check here
-		if (version_compare(PHP_VERSION, '5.6.0', '>='))
+		if (version_compare(PHP_VERSION, '8.2.0', '>='))
 		{
 			if (file_exists(DIRNAME . '/ndxzsite/config/config.php'))
 			{
@@ -91,7 +92,7 @@ class Installation
 		}
 		else
 		{
-			$this->html = "<p>" . $this->lang->word('you need php 5.6 or greater') . "<p>\n";
+			$this->html = "<p>" . $this->lang->word('you need php 8.2 or greater') . "<p>\n";
 		}
 	}
 	
@@ -185,7 +186,7 @@ class Installation
 				$objects = $this->db->fetchArray("SELECT ID FROM ".PX."objects");
 
 				// fresh install only adds three 'objects'
-				if (count($objects) < 4)
+				if (count((array) $objects) < 4)
 				{
 					// let's try to get the information from an older version
 					$this->html = $this->previous_install_connection();
@@ -273,7 +274,7 @@ class Installation
 
 		if (isset($_POST['upgrade']))
 		{
-			if (count($objects) < 4)
+			if (count((array) $objects) < 4)
 			{
 				$this->do_the_upgrade();
 			}
@@ -283,7 +284,7 @@ class Installation
 				exit;
 			}
 		}
-		elseif ((file_exists(DIRNAME . '/ndxz-studio/config/config.php')) && (count($objects) < 4))
+		elseif ((file_exists(DIRNAME . '/ndxz-studio/config/config.php')) && (count((array) $objects) < 4))
 		{
 			$this->html = "<p>Do you want to import the data from your previous website?</p>";
 				
@@ -334,9 +335,7 @@ class Installation
 			$this->charset_collate .= ' COLLATE ' . $this->collate;
 		}
 		
-		$ver = $this->mysqli_ver($this->db->link);
-		
-		return ((is_numeric($ver) && $ver <= 4)) ? 'TYPE=MyISAM' : 'ENGINE=MyISAM DEFAULT CHARSET=utf8';
+		return 'ENGINE=MyISAM DEFAULT CHARSET=utf8';
 	}
 	
 	
@@ -602,7 +601,7 @@ class Installation
 		$sql[] = "CREATE TABLE IF NOT EXISTS ".PX."users (
 		  ID int(11) NOT NULL AUTO_INCREMENT,
 		  userid varchar(100) NOT NULL DEFAULT '',
-		  password varchar(32) NOT NULL DEFAULT '',
+		  password varchar(255) NOT NULL DEFAULT '',
 		  email varchar(100) NOT NULL DEFAULT '',
 		  threads tinyint(3) NOT NULL DEFAULT '10',
 		  writing tinyint(1) NOT NULL DEFAULT '0',
@@ -642,11 +641,14 @@ class Installation
 		$sql[] = "INSERT INTO `".PX."settings` (`adm_id`, `site_name`, `installdate`, `version`, `curr_time`, `site_lang`, `time_format`, `tagging`, `help`, `hibernate`, `obj_name`, `obj_theme`, `obj_itop`, `obj_ibot`, `obj_org`, `obj_apikey`, `site_format`, `site_offset`, `site_vars`) VALUES
 		(1, ".$this->db->escape($c['n_site']).", '" . getNow() . "', '" . VERSION . "', 1, 'en-us', '%d %B %Y', 1, 0, '', ".$this->db->escape($c['n_site']).", 'default', '<h1><a href=\"/\" title=\"{{obj_name}}\">{{obj_name}}</a></h1>', '<p>Copyright 2007-2017<br />\n<a href=\"http://www.indexhibit.org/\">Built with Indexhibit</a></p>', 2, 'asdfsafasfadsfdfs', '%d %B %Y', 0, 'a:3:{s:9:\"passwords\";s:1:\"1\";s:9:\"templates\";s:1:\"0\";s:4:\"tags\";s:1:\"1\";}');";
 		
+		// default login is index1 / exhibit, the user is asked to change it after install
+		$this->login_token = ndxz_login_token_new();
+		
 		// user cookie saved language selection
 		$the_lang = (isset($_COOKIE['user_lang'])) ? $_COOKIE['user_lang'] : 'en-us';
 
 		$sql[] = "INSERT INTO `".PX."users` (`ID`, `userid`, `password`, `email`, `threads`, `writing`, `user_offset`, `user_format`, `user_lang`, `user_hash`, `user_help`, `user_mode`, `user_name`, `user_surname`, `user_admin`, `user_active`, `user_client`) VALUES
-		(1, 'index1', '22645ed8b5f5fa4b597d0fe61bed6a96', ".$this->db->escape($c['n_email']).", 15, 0, 0, '%d %B %Y', ".$this->db->escape($the_lang).", '5f8bfb51cc5c437a603abe3766d004d8', 0, 1, ".$this->db->escape($c['n_fname']).", ".$this->db->escape($c['n_lname']).", 1, 1, 0);";
+		(1, 'index1', ".$this->db->escape(ndxz_password_hash('exhibit')).", ".$this->db->escape($c['n_email']).", 15, 0, 0, '%d %B %Y', ".$this->db->escape($the_lang).", '" . ndxz_login_token_hash($this->login_token) . "', 0, 1, ".$this->db->escape($c['n_fname']).", ".$this->db->escape($c['n_lname']).", 1, 1, 0);";
 
 		foreach ($sql as $install)
 		{
@@ -685,11 +687,6 @@ class Installation
 	*/
 	function escape_str($str)	
 	{	
-		if (function_exists('get_magic_quotes_gpc') && get_magic_quotes_gpc())
-		{
-			$str = stripslashes($str);
-		}
-
 		if (function_exists('mysqli_real_escape_string'))
 		{
 			return mysqli_real_escape_string($this->link, $str);
@@ -705,15 +702,6 @@ class Installation
 	}
 
 
-	function mysqli_ver()
-	{
-		$ver = mysqli_get_client_version();
-
-		// we only need first number
-		$ver = substr($ver, 0, 1);
-		return $ver;
-	}
-	
 	function showPosted($var)
 	{
 		global $c;
@@ -769,7 +757,7 @@ if (!defined('PX')) { define('PX', '$c[n_appnd]'); }";
 		return FALSE;
 	}
 	
-	function getLanguage($default='', $name, $attr='')
+	function getLanguage($default='', $name='', $attr='')
 	{
 		global $lang;
 
@@ -916,8 +904,8 @@ if (!defined('PX')) { define('PX', '$c[n_appnd]'); }";
 			
 				if ($result)
 				{
-					setcookie('ndxz_hash', '5f8bfb51cc5c437a603abe3766d004d8', time()+3600*24*2, '/');
-					setcookie('ndxz_access', md5('exhibit'), time()+3600*24*2, '/');
+					setcookie('ndxz_hash', ndxz_login_token_hash($this->login_token), ndxz_auth_cookie_options(time()+3600*24*2));
+					setcookie('ndxz_access', $this->login_token, ndxz_auth_cookie_options(time()+3600*24*2));
 					header('location:' . BASEURL . BASENAME . '/install.php?p=3&s=success');
 					exit;
 				}

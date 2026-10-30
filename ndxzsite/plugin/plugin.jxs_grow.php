@@ -1,4 +1,4 @@
-<?php
+<?php if (!defined('SITE')) exit('No direct script access allowed');
 
 #[AllowDynamicProperties]
 class Jxs_grow

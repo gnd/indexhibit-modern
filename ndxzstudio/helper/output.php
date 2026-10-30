@@ -125,12 +125,9 @@ function utf8Romanize($string)
  */
 function utf8_isASCII($str)
 {
-	for ($i=0; $i<strlen($str); $i++) 
-	{
-		if (ord($str . $i) >127) return false;
-	}
-
-	return true;
+	// this used to loop over ord($str . $i), which only ever looked at the
+	// first byte - kept as is so generated urls don't change
+	return (($str == '') || (ord($str[0]) <= 127));
 }
 
 	

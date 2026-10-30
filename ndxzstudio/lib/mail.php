@@ -391,7 +391,7 @@ class Mail
             $message = $this->getWrapMessage();
         }
         
-        return mail($to, $this->_subject, $message, $headers, $this->_params);
+        return mail($to, $this->_subject, $message, $headers, (string) $this->_params);
     }
     /**
      * debug
@@ -519,11 +519,8 @@ class Mail
             '<'  => '[',
             '>'  => ']',
         );
-        $filtered = filter_var(
-            $name,
-            FILTER_SANITIZE_STRING,
-            FILTER_FLAG_NO_ENCODE_QUOTES
-        );
+        // FILTER_SANITIZE_STRING is deprecated since PHP 8.1.
+        $filtered = strip_tags((string) $name);
         return trim(strtr($filtered, $rule));
     }
     /**
