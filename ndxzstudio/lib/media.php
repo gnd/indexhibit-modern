@@ -228,13 +228,32 @@ class Media
 		$this->image = $this->path . '/' . $this->filename;
 		// end inputs
 
+		// sites imported from 0.7x only have the resized {id}_name file, no original
+		$imported = false;
+
+		if (!is_file($this->image) && is_file($this->path . $this->id . $this->filename))
+		{
+			$this->image = $this->path . $this->id . $this->filename;
+			$imported = true;
+		}
+
+		// nothing to work with (a missing file used to be just a warning)
+		if (!is_file($this->image)) return;
+
 		$this->getFileType();
 		$this->get_input();
-		
+
 		// original sizes of things
 		$this->size = getimagesize($this->image);
 		$this->orig_kb = str_replace('.', '', @filesize($this->image));
-		
+
+		// keep the existing images as they are, we only need the system thumbnail
+		if ($imported == true)
+		{
+			$this->make_systhumb();
+			return;
+		}
+
 		if ($this->make_image == true) $this->make_image();
 		
 		if ($this->makethumb == true) 

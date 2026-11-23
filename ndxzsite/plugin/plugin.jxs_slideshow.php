@@ -112,7 +112,7 @@ class Jxs_slideshow
 		}
 		else if (in_array($rs['media_mime'], $default['images'])) // it's an image
 		{
-			$file = DIRNAME . '/files/gimgs/' . $rs['media_file'];
+			$file = DIRNAME . '/files/gimgs/' . ndxz_source_file(DIRNAME . '/files/gimgs', $rs['media_ref_id'], $rs['media_file']);
 	
 			// height and width of thumbnail
 			$size = getimagesize($file);

@@ -397,6 +397,9 @@ function entry_uri($uri='', $server_uri='')
 {
 	$url = $server_uri;
 
+	// the links of the old 0.7x versions look like /index.php?/work/page/
+	$url = preg_replace('#/index\.php\?(?=/)#', '', $url, 1);
+
 	// remove any illegal chars first ' " $ * @
 	// remove non alpha chars (a-zA-Z0-9-_/?# only)
 	// all urls are lowercase
@@ -607,6 +610,21 @@ function ndxz_safe_subpath($base, $name)
 function ndxz_esc($s)
 {
 	return htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8', false);
+}
+
+// Name of the full size image of an uploaded file. Uploads keep an unprefixed
+// original (red.jpg) next to the resized {exhibit_id}_red.jpg. Sites that were
+// imported from 0.7x only have the resized ones, so use that when there is
+// no original.
+function ndxz_source_file($dir, $ref_id, $file)
+{
+	$dir = rtrim($dir, '/');
+	if (!file_exists($dir . '/' . $file) && file_exists($dir . '/' . $ref_id . '_' . $file))
+	{
+		return $ref_id . '_' . $file;
+	}
+
+	return $file;
 }
 
 // Whitelist the tag method values ('exh' or 'img').

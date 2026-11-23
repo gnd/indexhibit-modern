@@ -23,6 +23,7 @@ class Installation
 	var $charset = 'utf8';
 	var $collate = 'utf8_unicode_ci';
 	var $login_token;
+	var $notes = array();
 
 	public function __construct()
 	{
@@ -949,16 +950,31 @@ if (!defined('PX')) { define('PX', '$c[n_appnd]'); }";
 		$settings = $this->db->fetchRecord("SELECT installdate, curr_time, time_format FROM {$old_prefix}settings");
 		
 		// also need old objects_prefs
-		$objects_prefs = $this->db->fetchRecord("SELECT obj_itop, obj_ibot, obj_name FROM {$old_prefix}objects_prefs 
+		$objects_prefs = $this->db->fetchRecord("SELECT * FROM {$old_prefix}objects_prefs
 			WHERE obj_id = '1'");
-		
+
+		// things we want to tell the user about when we are done
+		$this->notes = array();
+
 		// transform settings
 		$search = array('<%', '%>', '<plug:');
 		$replace = array('{{', '}}', '<plugin:');
 
 		if ($objects_prefs['obj_itop'] != '') { $settings['obj_itop'] = str_replace($search, $replace, $objects_prefs['obj_itop']); }
-		if ($objects_prefs['obj_ibot'] != '') { $settings['obj_ibot'] = str_replace($search, $replace, $objects_prefs['obj_ibot']); }
-		
+		if ($objects_prefs['obj_ibot'] != '')
+		{
+			$settings['obj_ibot'] = str_replace($search, $replace, $objects_prefs['obj_ibot']);
+
+			// the old versions added the 'Built with Indexhibit' link themselves, now it is part of this text
+			if (stripos($settings['obj_ibot'], 'indexhibit.org') === false)
+			{
+				$settings['obj_ibot'] .= "\n<p><a href=\"http://www.indexhibit.org/\">Built with Indexhibit</a></p>";
+			}
+		}
+
+		// 1 = chronological index (only used by the 'legacy_index' plugin)
+		if (isset($objects_prefs['obj_org'])) $settings['obj_org'] = (int) $objects_prefs['obj_org'];
+
 		$settings['obj_theme'] 	= 'default';
 		$settings['version']	= VERSION;
 		
@@ -980,6 +996,15 @@ if (!defined('PX')) { define('PX', '$c[n_appnd]'); }";
 			foreach ($medias as $media)
 			{
 				$media['media_obj_type'] = ($media['media_obj_type'] == 'exhibit') ? 'exhibits' : '';
+
+				// 0.7x stores the exhibit id in the file name (3_pic.jpg), we add it ourselves
+				// (files on disk stay as they are: 3_pic.jpg, th-3_pic.jpg, ...)
+				$id_prefix = $media['media_ref_id'] . '_';
+				if (strpos($media['media_file'], $id_prefix) === 0)
+				{
+					$media['media_file'] = substr($media['media_file'], strlen($id_prefix));
+				}
+
 				$media['media_udate'] = ($media['media_udate'] == '0000-00-00 00:00') ? getNow() : $media['media_udate'];
 				$media['media_uploaded'] = ($media['media_uploaded'] == '0000-00-00 00:00') ? getNow() : $media['media_uploaded'];
 				$this->db->insertArray(PX.'media', $media);
@@ -998,19 +1023,65 @@ if (!defined('PX')) { define('PX', '$c[n_appnd]'); }";
 			{
 				// exceptions
 				$object['object'] = 'exhibits';
-				$object['format'] = ($object['format'] == 'grow') ? 'visual_index' : $object['format'];
+				// the old formats always showed the image titles and captions (apart from
+				// these two), the new ones only do when 'titling' is switched on
+				$object['titling'] = (in_array($object['format'], array('grow_no_title', 'no_thumbs_no_captions'))) ? 0 : 1;
+
+				// old formats with a new equivalent - the others fall back to visual_index when shown
+				$formats = array(
+					'grow' => 'visual_index',
+					'grow_no_title' => 'visual_index',
+					'no_thumbs_w_captions' => 'no_thumbs',
+					'no_thumbs_no_captions' => 'no_thumbs'
+				);
+				if (isset($formats[$object['format']])) $object['format'] = $formats[$object['format']];
 				$this->db->insertArray(PX.'objects', $object);
 			}
 		}
 		
 		// remake sections
 		$this->remake_sections();
-		
-		header('location:' . BASEURL . BASENAME . '/install.php?p=4&s=success');
-		exit;
+
+		// the visitor statistics
+		$this->import_stats($old_prefix);
+
+		// all good, nothing to say
+		if (empty($this->notes))
+		{
+			header('location:' . BASEURL . BASENAME . '/install.php?p=4&s=success');
+			exit;
+		}
+
+		// the import is done but there are things the user has to do by hand
+		$this->html = "<p><span class='ok'>OK</span> The import is done, but:</p>\n<ul>\n";
+		foreach ($this->notes as $note) $this->html .= "<li><p>" . htmlspecialchars($note, ENT_QUOTES, 'UTF-8') . "</p></li>\n";
+		$this->html .= "</ul>\n<p><a href='" . BASEURL . BASENAME . "/?a=system&q=preferences&flag=true'>Login</a></p>";
 	}
-	
-	
+
+
+	/**
+	* Copies the visitor statistics of the old site (0.7x ndxz_stats). Not critical,
+	* the old table is left alone.
+	*
+	* @param string $old_prefix
+	* @return void
+	*/
+	function import_stats($old_prefix)
+	{
+		$this->db->query("TRUNCATE TABLE ".PX."stats");
+
+		// old rows can have empty dates
+		$ok = $this->db->query("INSERT INTO ".PX."stats
+			(hit_id, hit_addr, hit_country, hit_lang, hit_domain, hit_referrer, hit_page, hit_agent,
+			hit_keyword, hit_os, hit_browser, hit_time, hit_month, hit_day)
+			SELECT hit_id, hit_addr, hit_country, hit_lang, hit_domain, hit_referrer, hit_page, hit_agent,
+			hit_keyword, hit_os, hit_browser, hit_time,
+			COALESCE(DATE_FORMAT(hit_time, '%Y-%m'), ''), COALESCE(DATE(hit_time), '1970-01-01')
+			FROM {$old_prefix}stats");
+
+		if (!$ok) $this->notes[] = "The visitor statistics of the old site could not be copied (" . mysqli_error($this->db->link) . "). They are still in the table {$old_prefix}stats.";
+	}
+
 	function remake_sections()
 	{
 		global $go, $default, $indx;
@@ -1043,10 +1114,10 @@ if (!defined('PX')) { define('PX', '$c[n_appnd]'); }";
 			$last = $this->db->insertArray(PX.'sections', $tag_section);
 		}
 		
-		//include DIRNAME . '/ndxz-studio/helper/time.php';
-		include DIRNAME . '/ndxz-studio/helper/output.php';
-		include DIRNAME . '/ndxz-studio/helper/romanize.php';
-		include DIRNAME . '/ndxz-studio/lib/publish.php';
+		// use our own copies - the old ones (0.7x) don't load on PHP 8
+		include_once DIRNAME . '/ndxzstudio/helper/output.php';
+		include_once DIRNAME . '/ndxzstudio/helper/romanize.php';
+		include_once DIRNAME . '/ndxzstudio/lib/publish.php';
 		
 		$PUB = new Publish();
 		
@@ -1120,6 +1191,7 @@ if (!defined('PX')) { define('PX', '$c[n_appnd]'); }";
 		
 		$this->db->insertArray(PX.'objects', $tag);
 	}
+
 }
 $install = new Installation;
 header ('Content-type: text/html; charset=utf-8'); ?>

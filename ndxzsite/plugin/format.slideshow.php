@@ -139,7 +139,7 @@ class Exhibit
 		// if it's an image
 		if (in_array($image['media_mime'], $default['images']))
 		{
-			$size = getimagesize(DIRNAME . '/files/gimgs/' . $image['media_file']);
+			$size = getimagesize(DIRNAME . '/files/gimgs/' . ndxz_source_file(DIRNAME . '/files/gimgs', $image['media_ref_id'], $image['media_file']));
 		
 			$a = "<div id='slideshow-wrapper'>\n";
 			$a .= "<div id='slideshow' style='position: relative;'>\n";

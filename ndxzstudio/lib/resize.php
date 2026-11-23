@@ -44,6 +44,8 @@ class Resize
 			$file = $img['media_file'];
 			
 			if ($img['media_dir'] != '') $dir = "/files/$img[media_dir]";
+			
+			$file = ndxz_source_file(DIRNAME . $dir, (isset($img['media_ref_id']) ? $img['media_ref_id'] : $id), $file);
 		}
 		else // video and other
 		{

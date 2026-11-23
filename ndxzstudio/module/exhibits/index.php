@@ -1347,7 +1347,7 @@ var ide = '$go[id]';";
 			$path = $rs['sec_path'];
 			
 			// if subdir we need more information
-			if ($rs['section_sub'] != 0)
+			if (($rs['section_sub'] != '') && ($rs['section_sub'] != '0'))
 			{
 				$sub = $this->db->fetchRecord("SELECT sub_folder       
 					FROM ".PX."subsections 
